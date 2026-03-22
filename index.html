@@ -149,6 +149,35 @@
   .pending-step{display:flex;align-items:flex-start;gap:12px;font-size:15px;color:var(--dim);}
   .step-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);color:var(--tab-mpl);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 
+
+  /* Gallery grid */
+  .gallery-section{padding:0 20px 20px;}
+  .gallery-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+  .gallery-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+  .gallery-filter{display:flex;gap:6px;flex-wrap:wrap;}
+  .gf-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all 0.15s;}
+  .gf-btn:hover,.gf-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,0.08);}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;}
+  .gallery-thumb{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);border:1px solid var(--border);transition:all 0.15s;aspect-ratio:1;}
+  .gallery-thumb:hover{border-color:var(--accent);transform:scale(1.03);}
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .gallery-thumb .thumb-time{position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:rgba(10,14,26,0.75);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text);text-align:center;}
+  .gallery-thumb .thumb-spinner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .gallery-load-more{margin-top:10px;width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);cursor:pointer;transition:all 0.15s;text-align:center;}
+  .gallery-load-more:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* Lightbox */
+  .lightbox{display:none;position:fixed;inset:0;background:rgba(5,8,18,0.95);z-index:500;flex-direction:column;align-items:center;justify-content:center;}
+  .lightbox.show{display:flex;}
+  .lb-close{position:fixed;top:20px;right:24px;font-size:28px;color:var(--dim);cursor:pointer;line-height:1;z-index:501;background:none;border:none;transition:color 0.15s;}
+  .lb-close:hover{color:var(--text);}
+  .lb-img-wrap{max-width:90vw;max-height:80vh;display:flex;align-items:center;justify-content:center;}
+  .lb-img-wrap img{max-width:90vw;max-height:78vh;object-fit:contain;border-radius:8px;display:block;}
+  .lb-info{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--dim);text-align:center;}
+  .lb-nav{position:fixed;top:50%;transform:translateY(-50%);font-size:32px;color:var(--dim);cursor:pointer;background:none;border:none;padding:12px;transition:color 0.15s;z-index:501;}
+  .lb-nav:hover{color:var(--text);}
+  .lb-prev{left:16px;} .lb-next{right:16px;}
+  .lb-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
   .error-msg{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--danger);padding:12px 16px;border-radius:8px;font-size:15px;margin-bottom:16px;}
   .empty-state{padding:40px;text-align:center;color:var(--muted);font-size:14px;}
 </style>
@@ -156,7 +185,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="header-tag">☁ IIT MADRAS-SRMIST Research Collaboration · Chennai</div>
+    <div class="header-tag">☁ IIT Madras-SRMIST Research Collaboration · Chennai</div>
     <h1>Dataset <span>Explorer</span></h1>
     <p>Browse data availability · Identify missing capture windows · Sky Imager & MPL</p>
   </header>
@@ -267,6 +296,17 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="lbBgClick(event)">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-nav lb-prev" onclick="lbNav(-1)">‹</button>
+  <div>
+    <div class="lb-img-wrap" id="lb-img-wrap"><div class="lb-spinner"></div></div>
+    <div class="lb-info" id="lb-info"></div>
+  </div>
+  <button class="lb-nav lb-next" onclick="lbNav(1)">›</button>
 </div>
 
 <div class="tooltip" id="tooltip">
@@ -428,7 +468,7 @@ async function startScan() {
             const m = img.name.match(/\d{4}-\d{2}-\d{2}_(\d{2})(\d{2})/);
             if (!m) continue;
             if (!skyData[yr.name][mm][dd][m[1]]) skyData[yr.name][mm][dd][m[1]]={};
-            skyData[yr.name][mm][dd][m[1]][m[2]]=true;
+            skyData[yr.name][mm][dd][m[1]][m[2]]=img.id;
           }
         }
       }
@@ -594,14 +634,15 @@ function updateBreadcrumb() {
   add(`${selDay} ${MONTHS_SHORT[parseInt(selMonth,10)]} ${selYear}`, null, true);
 }
 
-// ── Day Detail (hour grid) ────────────────────────────────────────────────
+// ── Day Detail (hour grid + gallery) ────────────────────────────────────────
+let lbImages = [], lbIndex = 0;
+
 function renderDayDetail(container, yr, mo, dd, dayData) {
   const imgs = countDayImgs(dayData);
   const isEmpty = imgs === 0;
   const p = pct(imgs, SKY_MPD);
   const panel = document.createElement('div'); panel.className = 'day-detail';
 
-  // Header
   const hdr = document.createElement('div'); hdr.className = 'day-detail-header';
   hdr.innerHTML = `
     <span class="day-detail-title">☀️ ${dd} ${MONTHS_FULL[parseInt(mo,10)]} ${yr}</span>
@@ -612,24 +653,20 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
     const msg = document.createElement('div');
     msg.style.cssText = 'padding:32px;text-align:center;font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--danger);';
     msg.textContent = 'No images found for this day.';
-    panel.appendChild(msg);
-    container.appendChild(panel);
-    return;
+    panel.appendChild(msg); container.appendChild(panel); return;
   }
 
   // Hour grid
   const gridWrap = document.createElement('div'); gridWrap.className = 'hour-grid-wrap';
   const gridLbl = document.createElement('div'); gridLbl.className = 'hour-grid-label';
-  gridLbl.textContent = `Hourly capture map — 06:00–18:00 — bar height = minutes captured`;
+  gridLbl.textContent = 'Hourly capture map — 06:00–18:00 — bar height = minutes captured';
   gridWrap.appendChild(gridLbl);
   const grid = document.createElement('div'); grid.className = 'hour-grid';
-
   for (let h = SKY_H_START; h < SKY_H_END; h++) {
     const hh = String(h).padStart(2,'0');
     const hrData = dayData[hh]||{};
     const count = Object.keys(hrData).length;
-    const fillPct = count/60*100;
-    const cp = Math.round(fillPct);
+    const fillPct = count/60*100, cp = Math.round(fillPct);
     const clr = cp>=90?'var(--present)':cp>=50?'var(--warn)':cp>0?'var(--danger)':'var(--border)';
     const cell = document.createElement('div'); cell.className = 'hour-cell';
     const inner = document.createElement('div'); inner.className = 'hour-cell-inner';
@@ -652,7 +689,6 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
       if (!(dayData[hh]&&dayData[hh][mm])) missing.push(`${hh}:${mm}`);
     }
   }
-
   const missWrap = document.createElement('div'); missWrap.className = 'missing-detail';
   if (missing.length === 0) {
     const ok = document.createElement('div');
@@ -666,7 +702,7 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
     summary.textContent = `▸ ${missing.length} missing minute${missing.length!==1?'s':''}`;
     const pills = document.createElement('div'); pills.className = 'missing-pills';
     for (const t of missing.slice(0,200)) {
-      const p = document.createElement('span'); p.className = 'missing-pill'; p.textContent = t; pills.appendChild(p);
+      const sp = document.createElement('span'); sp.className = 'missing-pill'; sp.textContent = t; pills.appendChild(sp);
     }
     if (missing.length>200) {
       const more = document.createElement('span');
@@ -677,8 +713,139 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
     missWrap.appendChild(details);
   }
   panel.appendChild(missWrap);
+
+  // ── Gallery ──────────────────────────────────────────────────────────────
+  // Build flat sorted list of {fileId, timestamp} for this day
+  const allImgs = [];
+  for (let h=SKY_H_START; h<SKY_H_END; h++) {
+    const hh = String(h).padStart(2,'0');
+    const hrData = dayData[hh]||{};
+    const mins = Object.keys(hrData).sort();
+    for (const mm of mins) {
+      const fileId = hrData[mm];
+      if (fileId && typeof fileId === 'string') {
+        allImgs.push({ fileId, time: `${hh}:${mm}`, label: `${yr}-${mo}-${dd} ${hh}:${mm}` });
+      }
+    }
+  }
+
+  if (allImgs.length === 0) { container.appendChild(panel); return; }
+
+  const galSec = document.createElement('div'); galSec.className = 'gallery-section';
+
+  // Gallery header with hour filter buttons
+  const galHdr = document.createElement('div'); galHdr.className = 'gallery-header';
+  const galLbl = document.createElement('div'); galLbl.className = 'gallery-label';
+  galLbl.textContent = `Image gallery — ${allImgs.length} images`;
+  galHdr.appendChild(galLbl);
+
+  const filterWrap = document.createElement('div'); filterWrap.className = 'gallery-filter';
+  const allBtn = document.createElement('button'); allBtn.className = 'gf-btn active'; allBtn.textContent = 'All';
+  filterWrap.appendChild(allBtn);
+  for (let h=SKY_H_START; h<SKY_H_END; h++) {
+    const hh = String(h).padStart(2,'0');
+    if (!dayData[hh] || Object.keys(dayData[hh]).length === 0) continue;
+    const fb = document.createElement('button'); fb.className = 'gf-btn'; fb.textContent = hh+'h';
+    fb.dataset.hour = hh;
+    filterWrap.appendChild(fb);
+  }
+  galHdr.appendChild(filterWrap);
+  galSec.appendChild(galHdr);
+
+  // Gallery grid
+  const galGrid = document.createElement('div'); galGrid.className = 'gallery-grid';
+  galSec.appendChild(galGrid);
+
+  const loadMoreBtn = document.createElement('div'); loadMoreBtn.className = 'gallery-load-more';
+  galSec.appendChild(loadMoreBtn);
+
+  panel.appendChild(galSec);
   container.appendChild(panel);
+
+  // Render gallery with pagination
+  let activeHour = 'all', pageSize = 48, currentPage = 0;
+
+  function filteredImgs() {
+    return activeHour === 'all' ? allImgs : allImgs.filter(i => i.time.startsWith(activeHour+':'));
+  }
+
+  function renderGallery() {
+    galGrid.innerHTML = '';
+    const filt = filteredImgs();
+    const start = 0, end = pageSize * (currentPage + 1);
+    const slice = filt.slice(start, end);
+
+    slice.forEach((img, idx) => {
+      const thumb = document.createElement('div'); thumb.className = 'gallery-thumb';
+      const imgEl = document.createElement('img');
+      imgEl.loading = 'lazy';
+      imgEl.src = `https://lh3.googleusercontent.com/d/${img.fileId}=w200`;
+      imgEl.alt = img.label;
+      imgEl.onerror = () => { thumb.style.opacity='0.4'; };
+      const timeEl = document.createElement('div'); timeEl.className = 'thumb-time'; timeEl.textContent = img.time;
+      thumb.appendChild(imgEl); thumb.appendChild(timeEl);
+      thumb.addEventListener('click', () => openLightbox(filt, idx));
+      galGrid.appendChild(thumb);
+    });
+
+    if (end < filt.length) {
+      loadMoreBtn.style.display = 'block';
+      loadMoreBtn.textContent = `Show more (${filt.length - end} remaining)`;
+      loadMoreBtn.onclick = () => { currentPage++; renderGallery(); };
+    } else {
+      loadMoreBtn.style.display = 'none';
+    }
+    galLbl.textContent = `Image gallery — ${filt.length} image${filt.length!==1?'s':''}${activeHour!=='all'?' · hour '+activeHour:''}`;
+  }
+
+  // Filter buttons
+  filterWrap.querySelectorAll('.gf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterWrap.querySelectorAll('.gf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeHour = btn.dataset.hour || 'all';
+      currentPage = 0;
+      renderGallery();
+    });
+  });
+
+  renderGallery();
 }
+
+// ── Lightbox ──────────────────────────────────────────────────────────────
+function openLightbox(images, index) {
+  lbImages = images; lbIndex = index;
+  document.getElementById('lightbox').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  loadLbImage();
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function lbBgClick(e) { if (e.target === document.getElementById('lightbox')) closeLightbox(); }
+function lbNav(dir) {
+  lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
+  loadLbImage();
+}
+function loadLbImage() {
+  const wrap = document.getElementById('lb-img-wrap');
+  const info = document.getElementById('lb-info');
+  const img = lbImages[lbIndex];
+  wrap.innerHTML = '<div class="lb-spinner"></div>';
+  info.textContent = `${img.label}  (${lbIndex+1} / ${lbImages.length})`;
+  const el = new Image();
+  el.src = `https://lh3.googleusercontent.com/d/${img.fileId}=w1600`;
+  el.style.cssText = 'max-width:90vw;max-height:78vh;object-fit:contain;border-radius:8px;display:block;';
+  el.onload = () => { wrap.innerHTML = ''; wrap.appendChild(el); };
+  el.onerror = () => { wrap.innerHTML = '<div style="color:var(--danger);font-family:JetBrains Mono,monospace;font-size:13px;padding:40px">Could not load image</div>'; };
+}
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('show')) return;
+  if (e.key==='ArrowRight') lbNav(1);
+  if (e.key==='ArrowLeft')  lbNav(-1);
+  if (e.key==='Escape')     closeLightbox();
+});
 
 // ── Tab switching ─────────────────────────────────────────────────────────
 function switchTab(tab) {

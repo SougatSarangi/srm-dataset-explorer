@@ -6,343 +6,157 @@
 <title>SRM Dataset Explorer</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
-
   :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #1f2d45;
-    --accent: #38bdf8;
-    --accent2: #818cf8;
-    --warn: #fb923c;
-    --danger: #f87171;
-    --text: #e2e8f0;
-    --text-muted: #64748b;
-    --text-dim: #94a3b8;
-    --present: #34d399;
-    --missing: #f87171;
-    --tab-sky: #38bdf8;
-    --tab-mpl: #a78bfa;
+    --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1f2d45;
+    --accent:#38bdf8;--accent2:#818cf8;--warn:#fb923c;--danger:#f87171;
+    --text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;--present:#34d399;
+    --tab-sky:#38bdf8;--tab-mpl:#a78bfa;
   }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .app{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:32px 24px;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  header{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border);}
+  .header-tag{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+  header h1{font-size:clamp(24px,4vw,36px);font-weight:800;letter-spacing:-1px;line-height:1.1;}
+  header h1 span{color:var(--accent);}
+  header p{margin-top:8px;color:var(--dim);font-size:14px;}
 
-  body {
-    font-family: 'Syne', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  #auth-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center;max-width:520px;margin:60px auto;}
+  .auth-icon{font-size:48px;margin-bottom:16px;}
+  #auth-section h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+  #auth-section p{color:var(--dim);font-size:14px;margin-bottom:24px;line-height:1.6;}
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:8px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;letter-spacing:0.3px;}
+  .btn-primary{background:var(--accent);color:#0a0e1a;}.btn-primary:hover{background:#7dd3fc;transform:translateY(-1px);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}.btn-secondary:hover{background:var(--border);}
+  .btn-export{background:rgba(52,211,153,0.1);color:var(--present);border:1px solid rgba(52,211,153,0.3);}.btn-export:hover{background:rgba(52,211,153,0.2);}
+  .btn-warn{background:rgba(251,146,60,0.1);color:var(--warn);border:1px solid rgba(251,146,60,0.3);}.btn-warn:hover{background:rgba(251,146,60,0.2);}
+  .btn-sm{padding:7px 14px;font-size:12px;}
 
-  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  /* Tabs */
+  .tab-bar{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;}
+  .tab-btn{flex:1;padding:10px 20px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;}
+  .tab-btn:hover{color:var(--text);background:var(--surface2);}
+  .tab-btn.active-sky{background:rgba(56,189,248,0.12);color:var(--tab-sky);border:1px solid rgba(56,189,248,0.25);}
+  .tab-btn.active-mpl{background:rgba(167,139,250,0.12);color:var(--tab-mpl);border:1px solid rgba(167,139,250,0.25);}
+  .tab-badge{font-family:'Space Mono',monospace;font-size:9px;padding:2px 7px;border-radius:10px;letter-spacing:0.5px;text-transform:uppercase;}
+  .badge-live{background:rgba(52,211,153,0.15);color:var(--present);}
+  .badge-soon{background:rgba(251,146,60,0.15);color:var(--warn);}
+  .tab-panel{display:none;}.tab-panel.active{display:block;}
 
-  /* ── Header ── */
-  header {
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-  header h1 {
-    font-size: clamp(24px, 4vw, 36px);
-    font-weight: 800;
-    letter-spacing: -1px;
-    line-height: 1.1;
-  }
-  header h1 span { color: var(--accent); }
-  header p { margin-top: 8px; color: var(--text-dim); font-size: 14px; }
+  /* Scan overlay */
+  #scan-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:28px;}
+  #scan-overlay.show{display:flex;}
+  .scan-title{font-size:20px;font-weight:800;}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .progress-track{width:360px;max-width:90vw;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.4s ease;width:0%;}
+  .progress-label{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);text-align:center;}
+  .progress-steps{display:flex;gap:8px;align-items:center;}
+  .progress-step{font-family:'Space Mono',monospace;font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);color:var(--muted);transition:all 0.3s;}
+  .progress-step.active{border-color:var(--accent);color:var(--accent);background:rgba(56,189,248,0.08);}
+  .progress-step.done{border-color:var(--present);color:var(--present);background:rgba(52,211,153,0.08);}
 
-  /* ── Auth ── */
-  #auth-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 40px;
-    text-align: center;
-    max-width: 520px;
-    margin: 60px auto;
-  }
-  .auth-icon { font-size: 48px; margin-bottom: 16px; }
-  #auth-section h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-  #auth-section p { color: var(--text-dim); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+  /* Cache bar */
+  #cache-bar{display:none;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:20px;}
+  #cache-bar.show{display:flex;}
+  .cache-info{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);flex:1;}
+  .cache-info strong{color:var(--present);}
 
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 24px; border-radius: 8px;
-    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
-    cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.3px;
-  }
-  .btn-primary { background: var(--accent); color: #0a0e1a; }
-  .btn-primary:hover { background: #7dd3fc; transform: translateY(-1px); }
-  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .btn-secondary:hover { background: var(--border); }
-  .btn-export { background: rgba(52,211,153,0.1); color: var(--present); border: 1px solid rgba(52,211,153,0.3); }
-  .btn-export:hover { background: rgba(52,211,153,0.2); transform: translateY(-1px); }
-  .btn-sm { padding: 7px 14px; font-size: 12px; }
+  /* Stats */
+  .stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;}
+  .stat-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+  .stat-value{font-size:22px;font-weight:800;color:var(--accent);}
+  .stat-value.green{color:var(--present);}.stat-value.orange{color:var(--warn);}.stat-value.red{color:var(--danger);}
 
-  /* ── Tabs ── */
-  .tab-bar {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 24px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 6px;
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: transparent;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    letter-spacing: 0.3px;
-  }
-  .tab-btn:hover { color: var(--text); background: var(--surface2); }
-  .tab-btn.active-sky {
-    background: rgba(56,189,248,0.12);
-    color: var(--tab-sky);
-    border: 1px solid rgba(56,189,248,0.25);
-  }
-  .tab-btn.active-mpl {
-    background: rgba(167,139,250,0.12);
-    color: var(--tab-mpl);
-    border: 1px solid rgba(167,139,250,0.25);
-  }
-  .tab-badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 9px;
-    padding: 2px 7px;
-    border-radius: 10px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .badge-live { background: rgba(52,211,153,0.15); color: var(--present); }
-  .badge-soon { background: rgba(251,146,60,0.15); color: var(--warn); }
+  .export-bar{display:none;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .export-bar.show{display:flex;}
 
-  /* ── Tab panels ── */
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  /* ── Button Grid Navigator ─────────────────────────── */
+  .nav-container{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+  .nav-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .nav-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--dim);letter-spacing:1px;}
+  .legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);}
+  .legend-dot{width:10px;height:10px;border-radius:2px;}
 
-  /* ── MPL pending panel ── */
-  .pending-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 60px 40px;
-    text-align: center;
-  }
-  .pending-icon { font-size: 56px; margin-bottom: 20px; }
-  .pending-panel h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; color: var(--tab-mpl); }
-  .pending-panel p { color: var(--text-dim); font-size: 14px; line-height: 1.8; max-width: 480px; margin: 0 auto; }
-  .pending-steps {
-    margin: 28px auto 0;
-    max-width: 420px;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .pending-step {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  .step-num {
-    flex-shrink: 0;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: rgba(167,139,250,0.15);
-    border: 1px solid rgba(167,139,250,0.3);
-    color: var(--tab-mpl);
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700;
-  }
+  /* Breadcrumb */
+  .breadcrumb{display:flex;align-items:center;gap:6px;padding:12px 20px;border-bottom:1px solid var(--border);font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);flex-wrap:wrap;min-height:44px;}
+  .bc-item{cursor:pointer;color:var(--accent);transition:opacity 0.15s;}.bc-item:hover{opacity:0.7;}
+  .bc-sep{color:var(--border);}
+  .bc-current{color:var(--dim);}
 
-  /* ── Stats bar ── */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 20px;
-  }
-  .stat-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px; color: var(--text-muted);
-    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px;
-  }
-  .stat-value { font-size: 22px; font-weight: 800; color: var(--accent); }
-  .stat-value.green { color: var(--present); }
-  .stat-value.orange { color: var(--warn); }
-  .stat-value.red { color: var(--danger); }
+  /* Grid section */
+  .grid-section{padding:20px;}
+  .grid-section-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
 
-  /* ── Controls ── */
-  .controls {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 20px; flex-wrap: wrap;
-  }
-  .control-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px; color: var(--text-muted); letter-spacing: 1px;
-  }
-  .folder-input {
-    flex: 1; min-width: 200px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 9px 14px;
-    color: var(--text); font-family: 'Space Mono', monospace; font-size: 12px; outline: none;
-  }
-  .folder-input:focus { border-color: var(--accent); }
-  .folder-input::placeholder { color: var(--text-muted); }
-  .scan-progress {
-    font-family: 'Space Mono', monospace; font-size: 11px;
-    color: var(--text-muted); margin-left: 8px;
-  }
+  /* Grid of nav buttons */
+  .btn-grid{display:flex;flex-wrap:wrap;gap:8px;}
 
-  /* ── Tree ── */
-  .tree-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
+  /* Individual nav button */
+  .nav-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;padding:10px 8px;min-width:72px;
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:10px;cursor:pointer;transition:all 0.15s;
+    font-family:'Syne',sans-serif;
   }
-  .tree-header {
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-  }
-  .tree-title { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 1px; }
-  .legend { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .nav-btn:hover{border-color:var(--accent);background:rgba(56,189,248,0.06);}
+  .nav-btn.selected{border-color:var(--accent);background:rgba(56,189,248,0.1);box-shadow:0 0 0 1px var(--accent);}
+  .nav-btn.zero{border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.05);}
+  .nav-btn.zero:hover{border-color:var(--danger);background:rgba(248,113,113,0.1);}
+  .nav-btn-label{font-size:14px;font-weight:700;color:var(--text);}
+  .nav-btn.zero .nav-btn-label{color:var(--danger);}
+  .nav-btn-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);}
+  .nav-btn-bar{width:100%;height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:2px;}
+  .nav-btn-bar-fill{height:100%;border-radius:2px;transition:width 0.3s ease;}
 
-  .tree-node { border-bottom: 1px solid var(--border); }
-  .tree-node:last-child { border-bottom: none; }
+  /* Day detail panel — hour grid */
+  .day-detail{border-top:1px solid var(--border);}
+  .day-detail-header{padding:14px 20px;background:rgba(56,189,248,0.04);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .day-detail-title{font-size:14px;font-weight:700;color:var(--accent);}
+  .day-detail-meta{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);}
+  .hour-grid-wrap{padding:20px;}
+  .hour-grid-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+  .hour-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:14px;}
+  .hour-cell{cursor:pointer;}
+  .hour-cell-inner{height:48px;border-radius:6px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;transition:opacity 0.15s;}
+  .hour-cell:hover .hour-cell-inner{opacity:0.8;}
+  .minute-fill{width:100%;border-radius:2px 2px 0 0;transition:height 0.4s ease;}
+  .hour-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;text-align:center;}
 
-  .node-row {
-    display: flex; align-items: center; padding: 0 12px;
-    cursor: pointer; transition: background 0.15s; user-select: none; min-height: 44px;
-  }
-  .node-row:hover { background: var(--surface2); }
-  .node-row.expanded { background: rgba(56,189,248,0.05); }
-  .node-row.zero-data { background: rgba(248,113,113,0.05); border-left: 3px solid var(--danger); }
-  .node-row.zero-data:hover { background: rgba(248,113,113,0.1); }
+  /* Missing pills */
+  .missing-detail{padding:0 20px 20px;}
+  .missing-toggle{font-family:'Space Mono',monospace;font-size:10px;color:var(--danger);cursor:pointer;letter-spacing:1px;text-transform:uppercase;background:none;border:none;padding:0;}
+  .missing-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+  .missing-pill{font-family:'Space Mono',monospace;font-size:10px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);padding:2px 7px;border-radius:4px;color:var(--danger);}
 
-  .node-indent { flex-shrink: 0; }
-  .node-chevron {
-    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted); font-size: 10px; transition: transform 0.2s; flex-shrink: 0;
-  }
-  .node-row.expanded > .node-chevron { transform: rotate(90deg); }
-  .node-icon { margin-right: 8px; font-size: 14px; }
-  .node-label { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
-  .node-label.year-label { font-size: 16px; font-weight: 800; color: var(--accent); }
-  .node-label.month-label { font-size: 14px; color: var(--accent2); }
-  .node-label.day-label { font-size: 13px; }
-  .node-label.day-label.no-data { color: var(--danger); }
+  /* Tooltip */
+  .tooltip{position:fixed;background:#0f172a;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;pointer-events:none;z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+  .tt-time{font-family:'Space Mono',monospace;color:var(--accent);font-size:11px;margin-bottom:4px;}
+  .tt-miss{color:var(--danger);font-size:11px;margin-top:2px;}
 
-  .node-meta { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-  .coverage-pill {
-    font-family: 'Space Mono', monospace; font-size: 10px;
-    padding: 3px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px;
-  }
-  .pill-great { background: rgba(52,211,153,0.15); color: var(--present); }
-  .pill-ok    { background: rgba(251,146,60,0.15); color: var(--warn); }
-  .pill-bad   { background: rgba(248,113,113,0.15); color: var(--danger); }
-  .zero-data-badge {
-    font-family: 'Space Mono', monospace; font-size: 9px; padding: 2px 8px; border-radius: 20px;
-    background: rgba(248,113,113,0.15); color: var(--danger);
-    border: 1px solid rgba(248,113,113,0.3); letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
-  }
-  .mini-bar { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-  .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  /* MPL Pending */
+  .pending-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:60px 40px;text-align:center;}
+  .pending-icon{font-size:56px;margin-bottom:20px;}
+  .pending-panel h2{font-size:22px;font-weight:800;margin-bottom:10px;color:var(--tab-mpl);}
+  .pending-panel p{color:var(--dim);font-size:14px;line-height:1.8;max-width:480px;margin:0 auto;}
+  .pending-steps{margin:28px auto 0;max-width:420px;text-align:left;display:flex;flex-direction:column;gap:12px;}
+  .pending-step{display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--dim);}
+  .step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);color:var(--tab-mpl);font-family:'Space Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 
-  .node-children { display: none; }
-  .node-children.open { display: block; }
-
-  /* ── Hour grid ── */
-  .hour-grid-container { padding: 16px 20px 16px 48px; background: var(--bg); border-top: 1px solid var(--border); }
-  .hour-grid-title { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; margin-bottom: 10px; text-transform: uppercase; }
-  .hour-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-bottom: 10px; }
-  .hour-cell { position: relative; cursor: pointer; }
-  .hour-cell-inner {
-    height: 36px; border-radius: 4px; display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-end; padding-bottom: 3px;
-    transition: opacity 0.15s; overflow: hidden;
-  }
-  .hour-cell:hover .hour-cell-inner { opacity: 0.8; }
-  .hour-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted); margin-top: 4px; text-align: center; }
-  .minute-fill { width: 100%; border-radius: 2px 2px 0 0; transition: height 0.4s ease; }
-
-  /* ── Tooltip ── */
-  .tooltip {
-    position: fixed; background: #0f172a; border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 14px; font-size: 12px;
-    pointer-events: none; z-index: 999; display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .tt-time { font-family: 'Space Mono', monospace; color: var(--accent); font-size: 11px; margin-bottom: 4px; }
-  .tt-missing { color: var(--danger); font-size: 11px; margin-top: 2px; }
-
-  /* ── Misc ── */
-  .spinner {
-    width: 20px; height: 20px; border: 2px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 0.7s linear infinite; display: inline-block;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .empty-state { padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px; }
-  .error-msg {
-    background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3);
-    color: var(--danger); padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;
-  }
-  .export-bar { margin-bottom: 16px; display: none; gap: 8px; flex-wrap: wrap; }
-  .export-bar.show { display: flex; }
+  .error-msg{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--danger);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;}
+  .empty-state{padding:40px;text-align:center;color:var(--muted);font-size:14px;}
 </style>
 </head>
 <body>
 <div class="app">
-
   <header>
-    <div class="header-tag">☁ IIT Madras and SRMIST Collaboration· Chennai</div>
+    <div class="header-tag">☁ IIT Madras - SRMIST Research Collaboration · Chennai</div>
     <h1>Dataset <span>Explorer</span></h1>
     <p>Browse data availability · Identify missing capture windows · Sky Imager & MPL</p>
   </header>
@@ -351,50 +165,67 @@
   <div id="auth-section">
     <div class="auth-icon">🔑</div>
     <h2>Connect to Google Drive</h2>
-    <p>This tool reads your SRM Dataset folder structure to visualize data availability and missing timestamps. No files are downloaded.</p>
+    <p>Sign in once with your Google account. The tool automatically scans the SRM dataset — no setup needed.</p>
     <button class="btn btn-primary" onclick="handleAuth()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Sign in with Google
     </button>
-    <p style="margin-top:16px;font-size:12px;color:var(--text-muted)">Read-only Drive access · Your data stays in Drive</p>
+    <p style="margin-top:16px;font-size:12px;color:var(--muted)">Read-only Drive access · Your data never leaves Drive</p>
+  </div>
+
+  <!-- Scan overlay -->
+  <div id="scan-overlay">
+    <div class="scan-title">Scanning Sky Imager Dataset</div>
+    <div class="spinner"></div>
+    <div style="width:360px;max-width:90vw;display:flex;flex-direction:column;gap:10px">
+      <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-label" id="prog-label">Starting…</div>
+    </div>
+    <div class="progress-steps">
+      <div class="progress-step" id="step-years">Years</div>
+      <div style="color:var(--border)">→</div>
+      <div class="progress-step" id="step-months">Months</div>
+      <div style="color:var(--border)">→</div>
+      <div class="progress-step" id="step-days">Days</div>
+      <div style="color:var(--border)">→</div>
+      <div class="progress-step" id="step-images">Images</div>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);text-align:center;max-width:320px;line-height:1.8">
+      This may take a few minutes for large datasets.<br>Results will be cached so future visits are instant.
+    </div>
   </div>
 
   <!-- Main App -->
   <div id="main-app" style="display:none">
-
-    <!-- Tab Bar -->
     <div class="tab-bar">
       <button class="tab-btn active-sky" id="tab-sky" onclick="switchTab('sky')">
-        ☀️ Sky Imager Data
-        <span class="tab-badge badge-live">Live</span>
+        ☀️ Sky Imager Data <span class="tab-badge badge-live">Live</span>
       </button>
       <button class="tab-btn" id="tab-mpl" onclick="switchTab('mpl')">
-        📡 MPL Data
-        <span class="tab-badge badge-soon">Coming Soon</span>
+        📡 MPL Data <span class="tab-badge badge-soon">Coming Soon</span>
       </button>
     </div>
 
-    <!-- Sky Imager Panel -->
+    <!-- Sky Panel -->
     <div class="tab-panel active" id="panel-sky">
       <div id="sky-error"></div>
 
-      <div class="controls">
-        <span class="control-label">FOLDER&nbsp;ID:</span>
-        <input class="folder-input" id="sky-folder-input" type="text" placeholder="Paste Sky Imager Data folder ID or Drive URL…" />
-        <button class="btn btn-primary btn-sm" onclick="startScan()">
-          <span id="sky-scan-text">Scan</span>
-          <span id="sky-scan-spin" style="display:none"><div class="spinner" style="width:14px;height:14px"></div></span>
-        </button>
+      <div id="cache-bar">
+        <span style="font-size:16px">⚡</span>
+        <span class="cache-info">Loaded from cache · Last scanned <strong id="cache-time">—</strong></span>
+        <button class="btn btn-warn btn-sm" onclick="rescan()">↺ Re-scan</button>
         <button class="btn btn-secondary btn-sm" onclick="signOut()">Sign Out</button>
-        <span class="scan-progress" id="sky-progress"></span>
+      </div>
+      <div id="live-bar" style="display:none;justify-content:flex-end;margin-bottom:16px;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="signOut()">Sign Out</button>
       </div>
 
       <div class="stats-bar" id="sky-stats" style="display:none">
-        <div class="stat-card"><div class="stat-label">Total Days</div><div class="stat-value" id="sky-stat-days">0</div></div>
-        <div class="stat-card"><div class="stat-label">Total Images</div><div class="stat-value green" id="sky-stat-images">0</div></div>
-        <div class="stat-card"><div class="stat-label">Missing Slots</div><div class="stat-value red" id="sky-stat-missing">0</div></div>
-        <div class="stat-card"><div class="stat-label">Empty Days</div><div class="stat-value red" id="sky-stat-empty">0</div></div>
-        <div class="stat-card"><div class="stat-label">Avg Coverage</div><div class="stat-value orange" id="sky-stat-coverage">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Days</div><div class="stat-value" id="s-days">0</div></div>
+        <div class="stat-card"><div class="stat-label">Total Images</div><div class="stat-value green" id="s-images">0</div></div>
+        <div class="stat-card"><div class="stat-label">Missing Slots</div><div class="stat-value red" id="s-missing">0</div></div>
+        <div class="stat-card"><div class="stat-label">Empty Days</div><div class="stat-value red" id="s-empty">0</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Coverage</div><div class="stat-value orange" id="s-cov">—</div></div>
       </div>
 
       <div class="export-bar" id="sky-export">
@@ -402,16 +233,22 @@
         <button class="btn btn-export btn-sm" onclick="exportCSV('empty')">⬇ Export Empty Days Only (CSV)</button>
       </div>
 
-      <div class="tree-container">
-        <div class="tree-header">
-          <span class="tree-title">SKY IMAGER · Click to expand · 06:00–18:00 · 1 min resolution</span>
+      <!-- Button-grid navigator -->
+      <div class="nav-container">
+        <div class="nav-header">
+          <span class="nav-title" id="nav-title">SKY IMAGER · Select a year to begin</span>
           <div class="legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--present)"></div>≥90%</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div>50–89%</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>&lt;50%</div>
           </div>
         </div>
-        <div id="sky-tree-body"><div class="empty-state">Scan a folder to explore the Sky Imager dataset →</div></div>
+        <div class="breadcrumb" id="breadcrumb">
+          <span class="bc-current">All years</span>
+        </div>
+        <div id="nav-body">
+          <div class="empty-state">Scan a folder to explore the dataset →</div>
+        </div>
       </div>
     </div>
 
@@ -422,477 +259,491 @@
         <h2>MPL Data — Coming Soon</h2>
         <p>The MPL dataset hasn't been uploaded yet. Once your colleague uploads the data, this tab will be configured to visualize it with the same level of detail as the Sky Imager explorer.</p>
         <div class="pending-steps">
-          <div class="pending-step">
-            <div class="step-num">1</div>
-            <div>MPL data gets uploaded to the <strong>MPL Data</strong> folder inside SRM Dataset</div>
-          </div>
-          <div class="pending-step">
-            <div class="step-num">2</div>
-            <div>Share the folder structure and file naming format with the tool maintainer</div>
-          </div>
-          <div class="pending-step">
-            <div class="step-num">3</div>
-            <div>The MPL tab gets configured — capture frequency, time window, file format — and this panel activates</div>
-          </div>
-          <div class="pending-step">
-            <div class="step-num">4</div>
-            <div>Upload the updated HTML file to GitHub Pages — teammates get the new tab automatically</div>
-          </div>
+          <div class="pending-step"><div class="step-num">1</div><div>MPL data gets uploaded to the <strong>MPL Data</strong> folder inside SRM Dataset</div></div>
+          <div class="pending-step"><div class="step-num">2</div><div>Share the folder structure and file naming format with the tool maintainer</div></div>
+          <div class="pending-step"><div class="step-num">3</div><div>The MPL tab gets configured and this panel activates</div></div>
+          <div class="pending-step"><div class="step-num">4</div><div>Upload the updated HTML file to GitHub — teammates get the update automatically</div></div>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-  </div><!-- /main-app -->
-</div><!-- /app -->
-
-<!-- Tooltip -->
 <div class="tooltip" id="tooltip">
   <div class="tt-time" id="tt-time"></div>
   <div id="tt-count"></div>
-  <div class="tt-missing" id="tt-missing"></div>
+  <div class="tt-miss" id="tt-miss"></div>
 </div>
 
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
-const CLIENT_ID   = '399592584276-csh0rgv9jp1ru58j2qksj8te91hnlfn6.apps.googleusercontent.com';
-const SCOPES      = 'https://www.googleapis.com/auth/drive.readonly';
-
-// Sky Imager settings
-const SKY_MINUTES_PER_DAY = 720; // 06:00–18:00, 1 per minute
-const SKY_HOUR_START = 6;
-const SKY_HOUR_END   = 18;
-// ─────────────────────────────────────────────────────────────────────────────
+const CLIENT_ID           = '399592584276-csh0rgv9jp1ru58j2qksj8te91hnlfn6.apps.googleusercontent.com';
+const SKY_FOLDER_ID       = '1ymphZWh4AhEY-7JktXYkUkZGUh1AumPD';
+const SCOPES              = 'https://www.googleapis.com/auth/drive.readonly';
+const SKY_MPD             = 720;
+const SKY_H_START         = 6;
+const SKY_H_END           = 18;
+const CACHE_KEY           = 'srm_sky_v2';
+const MONTHS_SHORT        = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL         = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
 
 let tokenClient, gapiInited = false, gsiInited = false;
-let skyDataTree = {};
-let activeTab = 'sky';
+let skyData = {};
 
-const MONTHS = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// state: what is currently selected
+let selYear = null, selMonth = null, selDay = null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 window.onload = () => {
   gapi.load('client', async () => {
-    await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-    gapiInited = true; maybeEnableAuth();
+    await gapi.client.init({ discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
+    gapiInited = true; maybeReady();
   });
 };
 window.onGoogleLibraryLoad = () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID, scope: SCOPES,
-    callback: (resp) => {
-      if (resp.error) { alert('Auth error: ' + resp.error); return; }
-      showMainApp();
-    }
+    callback: resp => { if (!resp.error) onSignedIn(); }
   });
-  gsiInited = true; maybeEnableAuth();
+  gsiInited = true; maybeReady();
 };
-function maybeEnableAuth() {
-  if (!gapiInited || !gsiInited) return;
-  if (gapi.client.getToken()) showMainApp();
-}
-function showMainApp() {
-  document.getElementById('auth-section').style.display = 'none';
-  document.getElementById('main-app').style.display = 'block';
+function maybeReady() {
+  if (gapiInited && gsiInited && gapi.client.getToken()) onSignedIn();
 }
 function handleAuth() {
   if (CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') { showDemoMode(); return; }
   gapi.client.getToken() === null
-    ? tokenClient.requestAccessToken({ prompt: 'consent' })
-    : tokenClient.requestAccessToken({ prompt: '' });
+    ? tokenClient.requestAccessToken({ prompt:'consent' })
+    : tokenClient.requestAccessToken({ prompt:'' });
+}
+function onSignedIn() {
+  document.getElementById('auth-section').style.display = 'none';
+  const cached = loadCache();
+  if (cached) {
+    skyData = cached.data;
+    showMainApp(); renderNav(); renderStats();
+    showCacheBar(cached.timestamp);
+  } else { startScan(); }
 }
 function signOut() {
   const t = gapi.client.getToken();
   if (t) { google.accounts.oauth2.revoke(t.access_token); gapi.client.setToken(''); }
   document.getElementById('auth-section').style.display = 'block';
   document.getElementById('main-app').style.display = 'none';
-  skyDataTree = {};
-  document.getElementById('sky-tree-body').innerHTML = '<div class="empty-state">Scan a folder to explore the Sky Imager dataset →</div>';
+  document.getElementById('scan-overlay').classList.remove('show');
+  skyData = {}; selYear = null; selMonth = null; selDay = null;
+}
+function rescan() {
+  clearCache();
+  document.getElementById('cache-bar').classList.remove('show');
   document.getElementById('sky-stats').style.display = 'none';
   document.getElementById('sky-export').classList.remove('show');
+  selYear = null; selMonth = null; selDay = null;
+  startScan();
+}
+function showMainApp() { document.getElementById('main-app').style.display = 'block'; }
+
+// ── Cache ─────────────────────────────────────────────────────────────────
+function saveCache(d)  { try { localStorage.setItem(CACHE_KEY, JSON.stringify({data:d, timestamp:Date.now()})); } catch(e){} }
+function loadCache()   { try { const r = localStorage.getItem(CACHE_KEY); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
+function clearCache()  { try { localStorage.removeItem(CACHE_KEY); } catch(e){} }
+function showCacheBar(ts) {
+  const diff = Date.now()-ts, d=Math.floor(diff/86400000), h=Math.floor(diff/3600000), m=Math.floor(diff/60000);
+  const ago = d>0?`${d}d ago`:h>0?`${h}h ago`:m>0?`${m}m ago`:'just now';
+  document.getElementById('cache-time').textContent = ago;
+  document.getElementById('cache-bar').classList.add('show');
+  document.getElementById('live-bar').style.display = 'none';
 }
 
-// ── Tab switching ─────────────────────────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('panel-sky').classList.toggle('active', tab === 'sky');
-  document.getElementById('panel-mpl').classList.toggle('active', tab === 'mpl');
-  const skyBtn = document.getElementById('tab-sky');
-  const mplBtn = document.getElementById('tab-mpl');
-  skyBtn.className = 'tab-btn' + (tab === 'sky' ? ' active-sky' : '');
-  mplBtn.className = 'tab-btn' + (tab === 'mpl' ? ' active-mpl' : '');
+// ── Progress ──────────────────────────────────────────────────────────────
+const STEP_ORDER = ['years','months','days','images'];
+function setStep(s) {
+  STEP_ORDER.forEach(x => {
+    const el = document.getElementById('step-'+x);
+    const idx = STEP_ORDER.indexOf(x), cur = STEP_ORDER.indexOf(s);
+    el.className = 'progress-step' + (idx===cur?' active':idx<cur?' done':'');
+  });
+}
+function setProgress(p, lbl) {
+  document.getElementById('prog-fill').style.width = p+'%';
+  document.getElementById('prog-label').textContent = lbl;
 }
 
-// ── Drive helpers ─────────────────────────────────────────────────────────
-function extractFolderId(input) {
-  const m = input.trim().match(/[-\w]{25,}/);
-  return m ? m[0] : input.trim();
-}
-async function listChildren(folderId, mimeTypeFilter) {
-  let all = [], pageToken = null;
-  const q = mimeTypeFilter
-    ? `'${folderId}' in parents and mimeType='${mimeTypeFilter}' and trashed=false`
-    : `'${folderId}' in parents and trashed=false`;
+// ── Scan ──────────────────────────────────────────────────────────────────
+async function listChildren(fid, mime) {
+  let all=[], tok=null;
+  const q = mime ? `'${fid}' in parents and mimeType='${mime}' and trashed=false`
+                 : `'${fid}' in parents and trashed=false`;
   do {
-    const params = { q, fields: 'nextPageToken,files(id,name,mimeType)', pageSize: 1000 };
-    if (pageToken) params.pageToken = pageToken;
-    const resp = await gapi.client.drive.files.list(params);
-    all = all.concat(resp.result.files || []);
-    pageToken = resp.result.nextPageToken;
-  } while (pageToken);
+    const params = {q, fields:'nextPageToken,files(id,name,mimeType)', pageSize:1000};
+    if (tok) params.pageToken = tok;
+    const r = await gapi.client.drive.files.list(params);
+    all = all.concat(r.result.files||[]);
+    tok = r.result.nextPageToken;
+  } while(tok);
   return all;
 }
 
-// ── Sky Imager scan ───────────────────────────────────────────────────────
 async function startScan() {
-  const raw = document.getElementById('sky-folder-input').value.trim();
-  if (!raw) { document.getElementById('sky-error').innerHTML = '<div class="error-msg">⚠ Please paste the folder ID or Drive URL.</div>'; return; }
-  document.getElementById('sky-error').innerHTML = '';
-  const folderId = extractFolderId(raw);
-  skyDataTree = {};
-
-  document.getElementById('sky-scan-text').style.display = 'none';
-  document.getElementById('sky-scan-spin').style.display = 'inline';
-  document.getElementById('sky-stats').style.display = 'none';
-  document.getElementById('sky-export').classList.remove('show');
-  document.getElementById('sky-tree-body').innerHTML = '<div class="empty-state">Scanning…</div>';
-
-  const setP = t => document.getElementById('sky-progress').textContent = t;
-
+  skyData = {}; selYear = null; selMonth = null; selDay = null;
+  document.getElementById('scan-overlay').classList.add('show');
+  document.getElementById('main-app').style.display = 'none';
+  setProgress(2,'Connecting to Drive…'); setStep('years');
   try {
-    setP('Reading years…');
-    const yearFolders = await listChildren(folderId, 'application/vnd.google-apps.folder');
+    const yearFolders = (await listChildren(SKY_FOLDER_ID,'application/vnd.google-apps.folder')).filter(f=>/^\d{4}$/.test(f.name));
+    setStep('months'); setProgress(8,'Counting months…');
+    const monthMap = {};
     for (const yr of yearFolders) {
-      if (!/^\d{4}$/.test(yr.name)) continue;
-      skyDataTree[yr.name] = {};
-      setP(`Reading ${yr.name}…`);
-      const monthFolders = await listChildren(yr.id, 'application/vnd.google-apps.folder');
-      for (const mo of monthFolders) {
+      const mf = await listChildren(yr.id,'application/vnd.google-apps.folder');
+      monthMap[yr.name] = mf.filter(f=>/^\d{2}/.test(f.name));
+    }
+    let totalDays=0, scanned=0;
+    setStep('days'); setProgress(14,'Counting days…');
+    const dayMap = {};
+    for (const yr of yearFolders) {
+      dayMap[yr.name]={};
+      for (const mo of (monthMap[yr.name]||[])) {
+        const df = await listChildren(mo.id,'application/vnd.google-apps.folder');
+        dayMap[yr.name][mo.name.split('-')[0]] = df.filter(f=>f.name.split('-').length>=3);
+        totalDays += dayMap[yr.name][mo.name.split('-')[0]].length;
+      }
+    }
+    setStep('images');
+    for (const yr of yearFolders) {
+      skyData[yr.name]={};
+      for (const mo of (monthMap[yr.name]||[])) {
         const mm = mo.name.split('-')[0];
-        if (!/^\d{2}$/.test(mm)) continue;
-        skyDataTree[yr.name][mm] = {};
-        setP(`Reading ${yr.name}-${mm}…`);
-        const dayFolders = await listChildren(mo.id, 'application/vnd.google-apps.folder');
-        for (const dy of dayFolders) {
-          const parts = dy.name.split('-');
-          if (parts.length < 3) continue;
-          const dd = parts[0];
-          skyDataTree[yr.name][mm][dd] = {};
-          setP(`Scanning ${dd}-${mm}-${yr.name}…`);
-          const subs = await listChildren(dy.id, 'application/vnd.google-apps.folder');
-          const ev0 = subs.find(f => f.name === 'ev0_resized');
+        skyData[yr.name][mm]={};
+        for (const dy of (dayMap[yr.name][mm]||[])) {
+          const dd = dy.name.split('-')[0];
+          skyData[yr.name][mm][dd]={};
+          scanned++;
+          setProgress(Math.round(14+(scanned/Math.max(totalDays,1))*84), `Scanning ${dd}/${mm}/${yr.name} (${scanned}/${totalDays})`);
+          const subs = await listChildren(dy.id,'application/vnd.google-apps.folder');
+          const ev0 = subs.find(f=>f.name==='ev0_resized');
           if (!ev0) continue;
-          const images = await listChildren(ev0.id, 'image/jpeg');
-          for (const img of images) {
+          const imgs = await listChildren(ev0.id,'image/jpeg');
+          for (const img of imgs) {
             const m = img.name.match(/\d{4}-\d{2}-\d{2}_(\d{2})(\d{2})/);
             if (!m) continue;
-            const hh = m[1], min = m[2];
-            if (!skyDataTree[yr.name][mm][dd][hh]) skyDataTree[yr.name][mm][dd][hh] = {};
-            skyDataTree[yr.name][mm][dd][hh][min] = true;
+            if (!skyData[yr.name][mm][dd][m[1]]) skyData[yr.name][mm][dd][m[1]]={};
+            skyData[yr.name][mm][dd][m[1]][m[2]]=true;
           }
         }
       }
     }
-    setP('');
-    renderSkyTree();
-    renderSkyStats();
+    setProgress(100,'Done! Saving to cache…');
+    saveCache(skyData);
+    await new Promise(r=>setTimeout(r,600));
+    document.getElementById('scan-overlay').classList.remove('show');
+    showMainApp(); renderNav(); renderStats();
+    document.getElementById('live-bar').style.display = 'flex';
   } catch(e) {
-    document.getElementById('sky-error').innerHTML = `<div class="error-msg">⚠ Drive error: ${e.result?.error?.message || e.message || JSON.stringify(e)}</div>`;
-    setP('');
+    document.getElementById('scan-overlay').classList.remove('show');
+    showMainApp();
+    document.getElementById('sky-error').innerHTML = `<div class="error-msg">⚠ Drive error: ${e.result?.error?.message||e.message||JSON.stringify(e)}</div>`;
   }
-  document.getElementById('sky-scan-text').style.display = 'inline';
-  document.getElementById('sky-scan-spin').style.display = 'none';
 }
 
-// ── Sky stats ─────────────────────────────────────────────────────────────
-function countDayImages(dayObj) {
-  let n = 0;
-  for (const hr of Object.values(dayObj)) n += Object.keys(hr).length;
-  return n;
-}
-function renderSkyStats() {
-  let totalDays = 0, totalImages = 0, totalMissing = 0, emptyDays = 0;
-  for (const yr of Object.values(skyDataTree))
+// ── Stats ─────────────────────────────────────────────────────────────────
+function countDayImgs(d) { let n=0; for (const h of Object.values(d)) n+=Object.keys(h).length; return n; }
+function renderStats() {
+  let days=0,imgs=0,miss=0,empty=0;
+  for (const yr of Object.values(skyData))
     for (const mo of Object.values(yr))
       for (const dy of Object.values(mo)) {
-        totalDays++;
-        const n = countDayImages(dy);
-        totalImages += n;
-        totalMissing += Math.max(0, SKY_MINUTES_PER_DAY - n);
-        if (n === 0) emptyDays++;
+        days++; const n=countDayImgs(dy);
+        imgs+=n; miss+=Math.max(0,SKY_MPD-n); if(n===0) empty++;
       }
-  document.getElementById('sky-stat-days').textContent = totalDays;
-  document.getElementById('sky-stat-images').textContent = totalImages.toLocaleString();
-  document.getElementById('sky-stat-missing').textContent = totalMissing.toLocaleString();
-  document.getElementById('sky-stat-empty').textContent = emptyDays;
-  const cov = totalDays > 0 ? Math.round((totalImages / (totalDays * SKY_MINUTES_PER_DAY)) * 100) : 0;
-  document.getElementById('sky-stat-coverage').textContent = cov + '%';
+  document.getElementById('s-days').textContent    = days;
+  document.getElementById('s-images').textContent  = imgs.toLocaleString();
+  document.getElementById('s-missing').textContent = miss.toLocaleString();
+  document.getElementById('s-empty').textContent   = empty;
+  const cov = days>0?Math.round((imgs/(days*SKY_MPD))*100):0;
+  document.getElementById('s-cov').textContent = cov+'%';
   document.getElementById('sky-stats').style.display = 'grid';
   document.getElementById('sky-export').classList.add('show');
 }
 
-// ── Sky tree rendering ────────────────────────────────────────────────────
-function pct(present, total) { return total === 0 ? 0 : Math.round((present / total) * 100); }
-function pillClass(p) { return p >= 90 ? 'pill-great' : p >= 50 ? 'pill-ok' : 'pill-bad'; }
-function barColor(p) { return p >= 90 ? 'var(--present)' : p >= 50 ? 'var(--warn)' : 'var(--danger)'; }
+// ── Coverage helpers ──────────────────────────────────────────────────────
+function pct(a,b){ return b===0?0:Math.round((a/b)*100); }
+function barClr(p){ return p>=90?'var(--present)':p>=50?'var(--warn)':'var(--danger)'; }
+function yearCoverage(yr) {
+  let imgs=0,exp=0;
+  for (const mo of Object.values(skyData[yr]||{}))
+    for (const dy of Object.values(mo)) { imgs+=countDayImgs(dy); exp+=SKY_MPD; }
+  return pct(imgs,exp);
+}
+function monthCoverage(yr,mo) {
+  let imgs=0,exp=0;
+  for (const dy of Object.values((skyData[yr]||{})[mo]||{})) { imgs+=countDayImgs(dy); exp+=SKY_MPD; }
+  return pct(imgs,exp);
+}
+function dayCoverage(yr,mo,dd) {
+  return pct(countDayImgs(((skyData[yr]||{})[mo]||{})[dd]||{}), SKY_MPD);
+}
 
-function renderSkyTree() {
-  const body = document.getElementById('sky-tree-body');
+// ── Button Grid Navigator ─────────────────────────────────────────────────
+function renderNav() {
+  updateBreadcrumb();
+  const body = document.getElementById('nav-body');
   body.innerHTML = '';
-  const years = Object.keys(skyDataTree).sort();
-  if (!years.length) { body.innerHTML = '<div class="empty-state">No data found in this folder.</div>'; return; }
-  for (const yr of years) body.appendChild(buildYearNode(yr));
-}
 
-function buildYearNode(yr) {
-  const months = Object.keys(skyDataTree[yr]).sort();
-  let imgs = 0, exp = 0;
-  for (const mo of months)
-    for (const dd of Object.keys(skyDataTree[yr][mo])) {
-      imgs += countDayImages(skyDataTree[yr][mo][dd]);
-      exp  += SKY_MINUTES_PER_DAY;
+  if (!selYear) {
+    // Show years
+    const years = Object.keys(skyData).sort();
+    if (!years.length) { body.innerHTML = '<div class="empty-state">No data found.</div>'; return; }
+    updateNavTitle('Select a year');
+    const section = makeSection('Years');
+    const grid = document.createElement('div'); grid.className = 'btn-grid';
+    for (const yr of years) {
+      const p = yearCoverage(yr);
+      const moCount = Object.keys(skyData[yr]).length;
+      const btn = makeNavBtn(yr, `${moCount} month${moCount!==1?'s':''}`, p, false, () => { selYear=yr; selMonth=null; selDay=null; renderNav(); });
+      grid.appendChild(btn);
     }
-  const p = pct(imgs, exp);
-  const wrap = document.createElement('div'); wrap.className = 'tree-node';
-  const row  = document.createElement('div'); row.className = 'node-row';
-  row.innerHTML = `
-    <div class="node-chevron">▶</div>
-    <span class="node-icon">📅</span>
-    <span class="node-label year-label">${yr}</span>
-    <div class="node-meta">
-      <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted)">${months.length} month${months.length!==1?'s':''}</span>
-      <div class="mini-bar"><div class="mini-bar-fill" style="width:${p}%;background:${barColor(p)}"></div></div>
-      <span class="coverage-pill ${pillClass(p)}">${p}%</span>
-    </div>`;
-  const kids = document.createElement('div'); kids.className = 'node-children';
-  for (const mo of months) kids.appendChild(buildMonthNode(yr, mo));
-  row.addEventListener('click', () => toggle(row, kids));
-  wrap.appendChild(row); wrap.appendChild(kids);
-  return wrap;
-}
+    section.appendChild(grid); body.appendChild(section);
 
-function buildMonthNode(yr, mo) {
-  const days = Object.keys(skyDataTree[yr][mo]).sort((a,b)=>+a-+b);
-  let imgs = 0;
-  for (const dd of days) imgs += countDayImages(skyDataTree[yr][mo][dd]);
-  const p = pct(imgs, days.length * SKY_MINUTES_PER_DAY);
-  const moNum = parseInt(mo, 10);
-  const wrap = document.createElement('div'); wrap.className = 'tree-node';
-  const row  = document.createElement('div'); row.className = 'node-row';
-  row.innerHTML = `
-    <div class="node-indent" style="width:20px"></div>
-    <div class="node-chevron">▶</div>
-    <span class="node-icon">🗓</span>
-    <span class="node-label month-label">${MONTHS[moNum] || mo} ${yr}</span>
-    <div class="node-meta">
-      <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted)">${days.length} day${days.length!==1?'s':''}</span>
-      <div class="mini-bar"><div class="mini-bar-fill" style="width:${p}%;background:${barColor(p)}"></div></div>
-      <span class="coverage-pill ${pillClass(p)}">${p}%</span>
-    </div>`;
-  const kids = document.createElement('div'); kids.className = 'node-children';
-  for (const dd of days) kids.appendChild(buildDayNode(yr, mo, dd));
-  row.addEventListener('click', () => toggle(row, kids));
-  wrap.appendChild(row); wrap.appendChild(kids);
-  return wrap;
-}
+  } else if (!selMonth) {
+    // Show months for selected year
+    const months = Object.keys(skyData[selYear]).sort();
+    updateNavTitle(`${selYear} — Select a month`);
+    const section = makeSection(`Months in ${selYear}`);
+    const grid = document.createElement('div'); grid.className = 'btn-grid';
+    for (const mo of months) {
+      const p = monthCoverage(selYear, mo);
+      const dayCount = Object.keys(skyData[selYear][mo]).length;
+      const btn = makeNavBtn(MONTHS_SHORT[parseInt(mo,10)]||mo, `${dayCount} day${dayCount!==1?'s':''}`, p, false,
+        () => { selMonth=mo; selDay=null; renderNav(); });
+      grid.appendChild(btn);
+    }
+    section.appendChild(grid); body.appendChild(section);
 
-function buildDayNode(yr, mo, dd) {
-  const dayData = skyDataTree[yr][mo][dd];
-  const imgs = countDayImages(dayData);
-  const p = pct(imgs, SKY_MINUTES_PER_DAY);
-  const isEmpty = imgs === 0;
-  const dateStr = `${dd} ${MONTHS[parseInt(mo,10)]} ${yr}`;
-
-  const wrap = document.createElement('div'); wrap.className = 'tree-node';
-  const row  = document.createElement('div');
-  row.className = 'node-row' + (isEmpty ? ' zero-data' : '');
-  row.innerHTML = `
-    <div class="node-indent" style="width:40px"></div>
-    <div class="node-chevron">${isEmpty ? '—' : '▶'}</div>
-    <span class="node-icon">${isEmpty ? '⛔' : '☀️'}</span>
-    <span class="node-label day-label${isEmpty ? ' no-data' : ''}">${dateStr}</span>
-    <div class="node-meta">
-      ${isEmpty
-        ? '<span class="zero-data-badge">NO DATA</span>'
-        : `<span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted)">${imgs.toLocaleString()} / ${SKY_MINUTES_PER_DAY}</span>`}
-      <div class="mini-bar"><div class="mini-bar-fill" style="width:${p}%;background:${barColor(p)}"></div></div>
-      <span class="coverage-pill ${pillClass(p)}">${isEmpty ? '0%' : p+'%'}</span>
-    </div>`;
-
-  const kids = document.createElement('div'); kids.className = 'node-children';
-  if (!isEmpty) {
-    kids.appendChild(buildHourGrid(yr, mo, dd, dayData));
-    row.addEventListener('click', () => toggle(row, kids));
+  } else if (!selDay) {
+    // Show days for selected month
+    const days = Object.keys(skyData[selYear][selMonth]).sort((a,b)=>+a-+b);
+    updateNavTitle(`${MONTHS_FULL[parseInt(selMonth,10)]} ${selYear} — Select a day`);
+    const section = makeSection(`Days in ${MONTHS_FULL[parseInt(selMonth,10)]} ${selYear}`);
+    const grid = document.createElement('div'); grid.className = 'btn-grid';
+    for (const dd of days) {
+      const p = dayCoverage(selYear, selMonth, dd);
+      const imgs = countDayImgs(skyData[selYear][selMonth][dd]);
+      const isEmpty = imgs === 0;
+      const sub = isEmpty ? 'no data' : `${imgs} imgs`;
+      const btn = makeNavBtn(dd, sub, p, isEmpty,
+        () => { selDay=dd; renderNav(); });
+      grid.appendChild(btn);
+    }
+    section.appendChild(grid); body.appendChild(section);
+    // Show day detail below if a day was previously selected
   }
-  wrap.appendChild(row); wrap.appendChild(kids);
-  return wrap;
+
+  // Day detail panel
+  if (selDay) {
+    const dayData = skyData[selYear][selMonth][selDay];
+    renderDayDetail(body, selYear, selMonth, selDay, dayData);
+  }
 }
 
-function buildHourGrid(yr, mo, dd, dayData) {
-  const container = document.createElement('div');
-  container.className = 'hour-grid-container';
+function makeSection(label) {
+  const sec = document.createElement('div'); sec.className = 'grid-section';
+  const lbl = document.createElement('div'); lbl.className = 'grid-section-label';
+  lbl.textContent = label;
+  sec.appendChild(lbl);
+  return sec;
+}
 
-  const title = document.createElement('div');
-  title.className = 'hour-grid-title';
-  title.textContent = `Hourly map — ${dd}/${mo}/${yr} · 06:00–18:00 · bar height = minutes captured`;
-  container.appendChild(title);
+function makeNavBtn(label, sub, p, isEmpty, onClick) {
+  const btn = document.createElement('div');
+  btn.className = 'nav-btn' + (isEmpty?' zero':'');
+  const clr = isEmpty ? 'var(--danger)' : barClr(p);
+  btn.innerHTML = `
+    <div class="nav-btn-label">${label}</div>
+    <div class="nav-btn-sub">${isEmpty?'no data':sub}</div>
+    <div class="nav-btn-bar"><div class="nav-btn-bar-fill" style="width:${isEmpty?0:p}%;background:${clr}"></div></div>
+    ${!isEmpty?`<div class="nav-btn-sub">${p}%</div>`:''}
+  `;
+  btn.addEventListener('click', onClick);
+  return btn;
+}
 
-  const grid = document.createElement('div');
-  grid.className = 'hour-grid';
+function updateNavTitle(t) { document.getElementById('nav-title').textContent = 'SKY IMAGER · '+t; }
 
-  for (let h = SKY_HOUR_START; h < SKY_HOUR_END; h++) {
+function updateBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = '';
+  const add = (label, onclick, isCurrent) => {
+    const span = document.createElement('span');
+    span.className = isCurrent ? 'bc-current' : 'bc-item';
+    span.textContent = label;
+    if (!isCurrent) span.addEventListener('click', onclick);
+    bc.appendChild(span);
+  };
+  const sep = () => { const s=document.createElement('span'); s.className='bc-sep'; s.textContent='›'; bc.appendChild(s); };
+
+  if (!selYear) { add('All years', null, true); return; }
+  add('All years', () => { selYear=null; selMonth=null; selDay=null; renderNav(); });
+  sep();
+  if (!selMonth) { add(selYear, null, true); return; }
+  add(selYear, () => { selMonth=null; selDay=null; renderNav(); });
+  sep();
+  if (!selDay) { add(`${MONTHS_FULL[parseInt(selMonth,10)]} ${selYear}`, null, true); return; }
+  add(`${MONTHS_FULL[parseInt(selMonth,10)]} ${selYear}`, () => { selDay=null; renderNav(); });
+  sep();
+  add(`${selDay} ${MONTHS_SHORT[parseInt(selMonth,10)]} ${selYear}`, null, true);
+}
+
+// ── Day Detail (hour grid) ────────────────────────────────────────────────
+function renderDayDetail(container, yr, mo, dd, dayData) {
+  const imgs = countDayImgs(dayData);
+  const isEmpty = imgs === 0;
+  const p = pct(imgs, SKY_MPD);
+  const panel = document.createElement('div'); panel.className = 'day-detail';
+
+  // Header
+  const hdr = document.createElement('div'); hdr.className = 'day-detail-header';
+  hdr.innerHTML = `
+    <span class="day-detail-title">☀️ ${dd} ${MONTHS_FULL[parseInt(mo,10)]} ${yr}</span>
+    <span class="day-detail-meta">${isEmpty?'⛔ No data':imgs.toLocaleString()+' / '+SKY_MPD+' images · '+p+'% coverage'}</span>`;
+  panel.appendChild(hdr);
+
+  if (isEmpty) {
+    const msg = document.createElement('div');
+    msg.style.cssText = 'padding:32px;text-align:center;font-family:"Space Mono",monospace;font-size:12px;color:var(--danger);';
+    msg.textContent = 'No images found for this day.';
+    panel.appendChild(msg);
+    container.appendChild(panel);
+    return;
+  }
+
+  // Hour grid
+  const gridWrap = document.createElement('div'); gridWrap.className = 'hour-grid-wrap';
+  const gridLbl = document.createElement('div'); gridLbl.className = 'hour-grid-label';
+  gridLbl.textContent = `Hourly capture map — 06:00–18:00 — bar height = minutes captured`;
+  gridWrap.appendChild(gridLbl);
+  const grid = document.createElement('div'); grid.className = 'hour-grid';
+
+  for (let h = SKY_H_START; h < SKY_H_END; h++) {
     const hh = String(h).padStart(2,'0');
-    const hrData = dayData[hh] || {};
+    const hrData = dayData[hh]||{};
     const count = Object.keys(hrData).length;
-    const fillPct = count / 60 * 100;
-    const p = Math.round(fillPct);
-    const color = p >= 90 ? 'var(--present)' : p >= 50 ? 'var(--warn)' : p > 0 ? 'var(--danger)' : 'var(--border)';
-
+    const fillPct = count/60*100;
+    const cp = Math.round(fillPct);
+    const clr = cp>=90?'var(--present)':cp>=50?'var(--warn)':cp>0?'var(--danger)':'var(--border)';
     const cell = document.createElement('div'); cell.className = 'hour-cell';
-    const inner = document.createElement('div'); inner.className = 'hour-cell-inner'; inner.style.background = 'var(--surface2)';
-    inner.innerHTML = `<div class="minute-fill" style="height:${fillPct}%;background:${color};width:100%"></div>`;
-    const label = document.createElement('div'); label.className = 'hour-label'; label.textContent = hh;
-    cell.appendChild(inner); cell.appendChild(label);
-    cell.addEventListener('mouseenter', e => showTip(e, `${yr}-${mo}-${dd} ${hh}:xx`, count, 60 - count));
+    const inner = document.createElement('div'); inner.className = 'hour-cell-inner';
+    inner.innerHTML = `<div class="minute-fill" style="height:${fillPct}%;background:${clr};width:100%"></div>`;
+    const lbl = document.createElement('div'); lbl.className = 'hour-label'; lbl.textContent = hh;
+    cell.appendChild(inner); cell.appendChild(lbl);
+    cell.addEventListener('mouseenter', e => showTip(e, `${yr}-${mo}-${dd} ${hh}:xx`, count, 60-count));
     cell.addEventListener('mousemove', moveTip);
     cell.addEventListener('mouseleave', hideTip);
     grid.appendChild(cell);
   }
-  container.appendChild(grid);
+  gridWrap.appendChild(grid); panel.appendChild(gridWrap);
 
   // Missing minutes
   const missing = [];
-  for (let h = SKY_HOUR_START; h < SKY_HOUR_END; h++) {
+  for (let h=SKY_H_START; h<SKY_H_END; h++) {
     const hh = String(h).padStart(2,'0');
-    for (let m = 0; m < 60; m++) {
+    for (let m=0; m<60; m++) {
       const mm = String(m).padStart(2,'0');
-      if (!(dayData[hh] && dayData[hh][mm])) missing.push(`${hh}:${mm}`);
+      if (!(dayData[hh]&&dayData[hh][mm])) missing.push(`${hh}:${mm}`);
     }
   }
 
+  const missWrap = document.createElement('div'); missWrap.className = 'missing-detail';
   if (missing.length === 0) {
     const ok = document.createElement('div');
-    ok.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--present);margin-top:8px;';
+    ok.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--present);';
     ok.textContent = '✓ Complete — all 720 images present (06:00–18:00)';
-    container.appendChild(ok);
-  } else if (missing.length < SKY_MINUTES_PER_DAY) {
+    missWrap.appendChild(ok);
+  } else {
     const details = document.createElement('details');
-    details.style.marginTop = '10px';
     const summary = document.createElement('summary');
-    summary.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--danger);cursor:pointer;letter-spacing:1px;text-transform:uppercase;';
+    summary.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--danger);cursor:pointer;letter-spacing:1px;text-transform:uppercase;list-style:none;';
     summary.textContent = `▸ ${missing.length} missing minute${missing.length!==1?'s':''}`;
-    const content = document.createElement('div');
-    content.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;';
-    const shown = missing.slice(0, 200);
-    for (const t of shown) {
-      const span = document.createElement('span');
-      span.style.cssText = 'background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);padding:2px 6px;border-radius:4px;color:var(--danger)';
-      span.textContent = t; content.appendChild(span);
+    const pills = document.createElement('div'); pills.className = 'missing-pills';
+    for (const t of missing.slice(0,200)) {
+      const p = document.createElement('span'); p.className = 'missing-pill'; p.textContent = t; pills.appendChild(p);
     }
-    if (missing.length > 200) {
+    if (missing.length>200) {
       const more = document.createElement('span');
-      more.style.cssText = 'color:var(--text-muted);padding:2px 6px;';
-      more.textContent = `…and ${missing.length - 200} more`;
-      content.appendChild(more);
+      more.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--muted);padding:2px 6px;';
+      more.textContent = `…and ${missing.length-200} more`; pills.appendChild(more);
     }
-    details.appendChild(summary); details.appendChild(content);
-    container.appendChild(details);
+    details.appendChild(summary); details.appendChild(pills);
+    missWrap.appendChild(details);
   }
-
-  return container;
+  panel.appendChild(missWrap);
+  container.appendChild(panel);
 }
 
-function toggle(row, kids) {
-  const open = kids.classList.toggle('open');
-  row.classList.toggle('expanded', open);
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('panel-sky').classList.toggle('active',tab==='sky');
+  document.getElementById('panel-mpl').classList.toggle('active',tab==='mpl');
+  document.getElementById('tab-sky').className = 'tab-btn'+(tab==='sky'?' active-sky':'');
+  document.getElementById('tab-mpl').className = 'tab-btn'+(tab==='mpl'?' active-mpl':'');
 }
 
 // ── Tooltip ───────────────────────────────────────────────────────────────
-function showTip(e, time, count, miss) {
-  const tt = document.getElementById('tooltip');
-  document.getElementById('tt-time').textContent = time;
-  document.getElementById('tt-count').textContent = `Present: ${count} / 60 min`;
-  document.getElementById('tt-missing').textContent = miss > 0 ? `Missing: ${miss} min` : '✓ Complete hour';
-  tt.style.display = 'block'; moveTip(e);
+function showTip(e,time,count,miss) {
+  const tt=document.getElementById('tooltip');
+  document.getElementById('tt-time').textContent=time;
+  document.getElementById('tt-count').textContent=`Present: ${count} / 60 min`;
+  document.getElementById('tt-miss').textContent=miss>0?`Missing: ${miss} min`:'✓ Complete hour';
+  tt.style.display='block'; moveTip(e);
 }
-function moveTip(e) {
-  const tt = document.getElementById('tooltip');
-  tt.style.left = (e.clientX + 14) + 'px';
-  tt.style.top  = (e.clientY - 40) + 'px';
-}
-function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
+function moveTip(e) { const tt=document.getElementById('tooltip'); tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY-40)+'px'; }
+function hideTip()  { document.getElementById('tooltip').style.display='none'; }
 
 // ── CSV Export ────────────────────────────────────────────────────────────
 function exportCSV(mode) {
-  const rows = ['date,hour,missing_timestamps,total_missing,coverage_pct'];
-  for (const yr of Object.keys(skyDataTree).sort())
-    for (const mo of Object.keys(skyDataTree[yr]).sort())
-      for (const dd of Object.keys(skyDataTree[yr][mo]).sort((a,b)=>+a-+b)) {
-        const dayData = skyDataTree[yr][mo][dd];
-        const imgs = countDayImages(dayData);
-        if (imgs === 0) {
-          if (mode !== 'all' || mode === 'empty') rows.push(`${yr}-${mo}-${dd},ALL,06:00-18:00,720,0`);
-          else rows.push(`${yr}-${mo}-${dd},ALL,06:00-18:00,720,0`);
-          continue;
-        }
-        if (mode === 'empty') continue;
-        for (let h = SKY_HOUR_START; h < SKY_HOUR_END; h++) {
-          const hh = String(h).padStart(2,'0');
-          const hrData = dayData[hh] || {};
-          const missList = [];
-          for (let m = 0; m < 60; m++) {
-            const mm = String(m).padStart(2,'0');
-            if (!hrData[mm]) missList.push(`${hh}:${mm}`);
-          }
-          if (missList.length > 0) {
-            const covP = Math.round(((60 - missList.length) / 60) * 100);
-            rows.push(`${yr}-${mo}-${dd},${hh},"${missList.join(' ')}",${missList.length},${covP}`);
-          }
+  const rows=['date,hour,missing_timestamps,total_missing,coverage_pct'];
+  for (const yr of Object.keys(skyData).sort())
+    for (const mo of Object.keys(skyData[yr]).sort())
+      for (const dd of Object.keys(skyData[yr][mo]).sort((a,b)=>+a-+b)) {
+        const d=skyData[yr][mo][dd]; const imgs=countDayImgs(d);
+        if (imgs===0) { rows.push(`${yr}-${mo}-${dd},ALL,06:00-18:00,720,0`); continue; }
+        if (mode==='empty') continue;
+        for (let h=SKY_H_START; h<SKY_H_END; h++) {
+          const hh=String(h).padStart(2,'0'); const hr=d[hh]||{}; const ml=[];
+          for (let m=0;m<60;m++){const mm=String(m).padStart(2,'0');if(!hr[mm])ml.push(`${hh}:${mm}`);}
+          if(ml.length) rows.push(`${yr}-${mo}-${dd},${hh},"${ml.join(' ')}",${ml.length},${Math.round(((60-ml.length)/60)*100)}`);
         }
       }
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = mode === 'empty' ? 'sky_imager_empty_days.csv' : 'sky_imager_missing_timestamps.csv';
-  a.click(); URL.revokeObjectURL(url);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download=mode==='empty'?'sky_imager_empty_days.csv':'sky_imager_missing_timestamps.csv';
+  a.click();
 }
 
 // ── Demo mode ─────────────────────────────────────────────────────────────
 function showDemoMode() {
-  showMainApp();
-  const mock = {};
-  for (const yr of [2023, 2024]) {
-    mock[yr] = {};
-    const months = yr === 2023 ? [10,11,12] : [1,2,3,4,5];
-    for (const mo of months) {
-      const moStr = String(mo).padStart(2,'0');
-      mock[yr][moStr] = {};
-      for (let d = 1; d <= 8; d++) {
-        const ddStr = String(d).padStart(2,'0');
-        mock[yr][moStr][ddStr] = {};
-        if (d === 3) continue; // simulate empty day
-        for (let h = SKY_HOUR_START; h < SKY_HOUR_END; h++) {
-          const hh = String(h).padStart(2,'0');
-          mock[yr][moStr][ddStr][hh] = {};
-          for (let m = 0; m < 60; m++)
-            if (Math.random() > 0.07)
-              mock[yr][moStr][ddStr][hh][String(m).padStart(2,'0')] = true;
+  document.getElementById('auth-section').style.display='none';
+  const mock={};
+  for (const yr of [2023,2024]) {
+    mock[yr]={};
+    for (const mo of (yr===2023?[10,11,12]:[1,2,3,4,5])) {
+      const ms=String(mo).padStart(2,'0'); mock[yr][ms]={};
+      for (let d=1;d<=8;d++) {
+        const ds=String(d).padStart(2,'0'); mock[yr][ms][ds]={};
+        if(d===3) continue;
+        for (let h=SKY_H_START;h<SKY_H_END;h++) {
+          const hh=String(h).padStart(2,'0'); mock[yr][ms][ds][hh]={};
+          for(let m=0;m<60;m++) if(Math.random()>0.07) mock[yr][ms][ds][hh][String(m).padStart(2,'0')]=true;
         }
       }
     }
   }
-  skyDataTree = mock;
-
-  const notice = document.createElement('div');
-  notice.style.cssText = 'background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:var(--accent);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;font-family:"Space Mono",monospace;';
-  notice.innerHTML = '⚠ DEMO MODE — synthetic data. Replace <b>CLIENT_ID</b> in the HTML to connect your real Google Drive.';
-  document.getElementById('sky-error').appendChild(notice);
-
-  renderSkyTree();
-  renderSkyStats();
-  document.getElementById('sky-folder-input').placeholder = 'Demo mode active';
+  skyData=mock; showMainApp(); renderNav(); renderStats();
+  document.getElementById('live-bar').style.display='flex';
+  const n=document.createElement('div');
+  n.style.cssText='background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);color:var(--accent);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;font-family:"Space Mono",monospace;';
+  n.innerHTML='⚠ DEMO MODE — synthetic data. Set <b>CLIENT_ID</b> in the HTML to connect your real Drive.';
+  document.getElementById('sky-error').appendChild(n);
 }
 </script>
 </body>

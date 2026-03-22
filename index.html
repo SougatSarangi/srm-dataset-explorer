@@ -185,7 +185,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="header-tag">☁ IIT Madras-SRMIST Research Collaboration · Chennai</div>
+    <div class="header-tag">☁ IIT Madras-SRMIST Research Collaboration</div>
     <h1>Dataset <span>Explorer</span></h1>
     <p>Browse data availability · Identify missing capture windows · Sky Imager & MPL</p>
   </header>
@@ -778,12 +778,15 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
     slice.forEach((img, idx) => {
       const thumb = document.createElement('div'); thumb.className = 'gallery-thumb';
       const imgEl = document.createElement('img');
-      imgEl.loading = 'lazy';
-      imgEl.src = `https://lh3.googleusercontent.com/d/${img.fileId}=w200`;
       imgEl.alt = img.label;
-      imgEl.onerror = () => { thumb.style.opacity='0.4'; };
+      imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+      const spinEl = document.createElement('div');
+      spinEl.className = 'thumb-spinner';
+      spinEl.innerHTML = '<div style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite"></div>';
+      thumb.appendChild(spinEl);
+      loadThumbBlob(img.fileId, imgEl, spinEl, thumb);
       const timeEl = document.createElement('div'); timeEl.className = 'thumb-time'; timeEl.textContent = img.time;
-      thumb.appendChild(imgEl); thumb.appendChild(timeEl);
+      thumb.appendChild(timeEl);
       thumb.addEventListener('click', () => openLightbox(filt, idx));
       galGrid.appendChild(thumb);
     });
@@ -812,6 +815,79 @@ function renderDayDetail(container, yr, mo, dd, dayData) {
   renderGallery();
 }
 
+// ── Image blob loader (uses Drive API token, works with private files) ──────
+const blobCache = {};
+
+async function loadImageBlob(fileId, size) {
+  const cacheKey = fileId + '_' + size;
+  if (blobCache[cacheKey]) return blobCache[cacheKey];
+
+  const token = gapi.client.getToken()?.access_token;
+  if (!token) throw new Error('No token');
+
+  if (size === 'thumb') {
+    // Step 1: get the thumbnailLink from Drive metadata (tiny JPEG, very fast)
+    const metaResp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=thumbnailLink`,
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (metaResp.ok) {
+      const meta = await metaResp.json();
+      if (meta.thumbnailLink) {
+        // thumbnailLink is a public CDN URL — fetch directly
+        // Replace =s220 with =s400 for slightly sharper thumbnails
+        const thumbUrl = meta.thumbnailLink.replace(/=s\d+$/, '=s400');
+        const thumbResp = await fetch(thumbUrl);
+        if (thumbResp.ok) {
+          const blob = await thumbResp.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          blobCache[cacheKey] = objectUrl;
+          return objectUrl;
+        }
+      }
+    }
+    // Fallback: full download if no thumbnail available
+  }
+
+  // Full size: download the actual file
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
+  const blob = await resp.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  blobCache[cacheKey] = objectUrl;
+  return objectUrl;
+}
+
+// Concurrency limiter — max 6 parallel image loads
+const thumbQueue = [];
+let activeThumbLoads = 0;
+const MAX_CONCURRENT = 6;
+
+function loadThumbBlob(fileId, imgEl, spinEl, thumbEl) {
+  thumbQueue.push({ fileId, imgEl, spinEl, thumbEl });
+  drainThumbQueue();
+}
+
+function drainThumbQueue() {
+  while (activeThumbLoads < MAX_CONCURRENT && thumbQueue.length > 0) {
+    const { fileId, imgEl, spinEl, thumbEl } = thumbQueue.shift();
+    activeThumbLoads++;
+    loadImageBlob(fileId, 'thumb').then(url => {
+      imgEl.src = url;
+      imgEl.onload = () => { spinEl.remove(); thumbEl.appendChild(imgEl); };
+      imgEl.onerror = () => { spinEl.remove(); thumbEl.style.opacity='0.4'; };
+    }).catch(() => {
+      spinEl.remove(); thumbEl.style.opacity='0.3';
+    }).finally(() => {
+      activeThumbLoads--;
+      drainThumbQueue();
+    });
+  }
+}
+
 // ── Lightbox ──────────────────────────────────────────────────────────────
 function openLightbox(images, index) {
   lbImages = images; lbIndex = index;
@@ -834,11 +910,15 @@ function loadLbImage() {
   const img = lbImages[lbIndex];
   wrap.innerHTML = '<div class="lb-spinner"></div>';
   info.textContent = `${img.label}  (${lbIndex+1} / ${lbImages.length})`;
-  const el = new Image();
-  el.src = `https://lh3.googleusercontent.com/d/${img.fileId}=w1600`;
-  el.style.cssText = 'max-width:90vw;max-height:78vh;object-fit:contain;border-radius:8px;display:block;';
-  el.onload = () => { wrap.innerHTML = ''; wrap.appendChild(el); };
-  el.onerror = () => { wrap.innerHTML = '<div style="color:var(--danger);font-family:JetBrains Mono,monospace;font-size:13px;padding:40px">Could not load image</div>'; };
+  loadImageBlob(img.fileId, 'full').then(url => {
+    const el = new Image();
+    el.style.cssText = 'max-width:90vw;max-height:78vh;object-fit:contain;border-radius:8px;display:block;';
+    el.onload = () => { wrap.innerHTML = ''; wrap.appendChild(el); };
+    el.onerror = () => { wrap.innerHTML = '<div style="color:var(--danger);font-family:\'JetBrains Mono\',monospace;font-size:13px;padding:40px">Could not load image</div>'; };
+    el.src = url;
+  }).catch(() => {
+    wrap.innerHTML = '<div style="color:var(--danger);font-family:\'JetBrains Mono\',monospace;font-size:13px;padding:40px">Could not load image</div>';
+  });
 }
 document.addEventListener('keydown', e => {
   if (!document.getElementById('lightbox').classList.contains('show')) return;

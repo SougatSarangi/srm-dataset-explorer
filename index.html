@@ -202,7 +202,14 @@
     <p style="margin-top:16px;font-size:14px;color:var(--muted)">Read-only Drive access · Your data never leaves Drive</p>
   </div>
 
-  <!-- Scan overlay -->
+  <!-- Index loading screen (fast — just reading a JSON file) -->
+  <div id="index-loading" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+    <div class="spinner" style="width:36px;height:36px"></div>
+    <div id="index-status" style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--muted);">Connecting…</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--border);margin-top:-8px;">Reading pre-built dataset index</div>
+  </div>
+
+  <!-- Scan overlay (fallback — only shown on first-ever visit before Apps Script is set up) -->
   <div id="scan-overlay">
     <div class="scan-title">Scanning Sky Imager Dataset</div>
     <div class="spinner"></div>
@@ -241,7 +248,7 @@
 
       <div id="cache-bar">
         <span style="font-size:16px">⚡</span>
-        <span class="cache-info">Loaded from cache · Last scanned <strong id="cache-time">—</strong></span>
+        <span class="cache-info" id="cache-time">Loading…</span>
         <button class="btn btn-warn btn-sm" onclick="rescan()">↺ Re-scan</button>
         <button class="btn btn-secondary btn-sm" onclick="signOut()">Sign Out</button>
       </div>
@@ -318,13 +325,14 @@
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script>
-const CLIENT_ID           = '399592584276-csh0rgv9jp1ru58j2qksj8te91hnlfn6.apps.googleusercontent.com';
-const SKY_FOLDER_ID       = '1ymphZWh4AhEY-7JktXYkUkZGUh1AumPD';
-const SCOPES              = 'https://www.googleapis.com/auth/drive.readonly';
-const SKY_MPD             = 720;
-const SKY_H_START         = 6;
-const SKY_H_END           = 18;
-const CACHE_KEY           = 'srm_sky_v2';
+const CLIENT_ID      = '399592584276-csh0rgv9jp1ru58j2qksj8te91hnlfn6.apps.googleusercontent.com';
+const SKY_FOLDER_ID  = '1ymphZWh4AhEY-7JktXYkUkZGUh1AumPD'; // kept as fallback
+const INDEX_FILE_ID  = '1ASfDGEr8wgX6_FNw4NKtB-y-s4suPWxH'; // ← paste from Apps Script log after first run
+const SCOPES         = 'https://www.googleapis.com/auth/drive.readonly';
+const SKY_MPD        = 720;
+const SKY_H_START    = 6;
+const SKY_H_END      = 18;
+const CACHE_KEY      = 'srm_sky_v3'; // bumped — old cache format incompatible
 const MONTHS_SHORT        = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL         = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -357,14 +365,71 @@ function handleAuth() {
     ? tokenClient.requestAccessToken({ prompt:'consent' })
     : tokenClient.requestAccessToken({ prompt:'' });
 }
-function onSignedIn() {
+async function onSignedIn() {
   document.getElementById('auth-section').style.display = 'none';
+
+  // Show a lightweight loading state while we try the index file
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('index-loading').style.display = 'flex';
+
+  // 1. Try cached data first — instant
   const cached = loadCache();
   if (cached) {
     skyData = cached.data;
+    document.getElementById('index-loading').style.display = 'none';
     showMainApp(); renderNav(); renderStats();
     showCacheBar(cached.timestamp);
-  } else { startScan(); }
+    // Silently check if a newer index exists in background
+    refreshIndexInBackground();
+    return;
+  }
+
+  // 2. Try fetching the pre-built index JSON from Drive
+  if (INDEX_FILE_ID !== 'PASTE_INDEX_FILE_ID_HERE') {
+    try {
+      document.getElementById('index-status').textContent = 'Loading dataset index…';
+      const data = await fetchIndexFile();
+      skyData = data.sky_imager || {};
+      saveCache(skyData);
+      document.getElementById('index-loading').style.display = 'none';
+      showMainApp(); renderNav(); renderStats();
+      showCacheBar(Date.now(), data.generated_at);
+      return;
+    } catch(e) {
+      console.warn('Index file fetch failed, falling back to scan:', e);
+    }
+  }
+
+  // 3. Fallback: full scan (first time or if index not set up yet)
+  document.getElementById('index-loading').style.display = 'none';
+  startScan();
+}
+
+async function fetchIndexFile() {
+  const token = gapi.client.getToken()?.access_token;
+  const resp = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${INDEX_FILE_ID}?alt=media`,
+    { headers: { Authorization: 'Bearer ' + token } }
+  );
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return resp.json();
+}
+
+async function refreshIndexInBackground() {
+  if (INDEX_FILE_ID === 'PASTE_INDEX_FILE_ID_HERE') return;
+  try {
+    const data = await fetchIndexFile();
+    // Check if index is newer than our cache
+    const cached = loadCache();
+    const indexTime = data.generated_at ? new Date(data.generated_at).getTime() : 0;
+    if (!cached || indexTime > cached.timestamp) {
+      skyData = data.sky_imager || {};
+      saveCache(skyData);
+      // Silently refresh the UI
+      renderNav(); renderStats();
+      showCacheBar(Date.now(), data.generated_at);
+    }
+  } catch(e) { /* silent — background refresh is best-effort */ }
 }
 function signOut() {
   const t = gapi.client.getToken();
@@ -379,8 +444,10 @@ function rescan() {
   document.getElementById('cache-bar').classList.remove('show');
   document.getElementById('sky-stats').style.display = 'none';
   document.getElementById('sky-export').classList.remove('show');
+  document.getElementById('main-app').style.display = 'none';
   selYear = null; selMonth = null; selDay = null;
-  startScan();
+  // Re-run the signed-in flow: will fetch fresh index or scan
+  onSignedIn();
 }
 function showMainApp() { document.getElementById('main-app').style.display = 'block'; }
 
@@ -388,10 +455,17 @@ function showMainApp() { document.getElementById('main-app').style.display = 'bl
 function saveCache(d)  { try { localStorage.setItem(CACHE_KEY, JSON.stringify({data:d, timestamp:Date.now()})); } catch(e){} }
 function loadCache()   { try { const r = localStorage.getItem(CACHE_KEY); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
 function clearCache()  { try { localStorage.removeItem(CACHE_KEY); } catch(e){} }
-function showCacheBar(ts) {
+function showCacheBar(ts, generatedAt) {
   const diff = Date.now()-ts, d=Math.floor(diff/86400000), h=Math.floor(diff/3600000), m=Math.floor(diff/60000);
   const ago = d>0?`${d}d ago`:h>0?`${h}h ago`:m>0?`${m}m ago`:'just now';
-  document.getElementById('cache-time').textContent = ago;
+  let label = `Loaded from index · Last scanned <strong>${ago}</strong>`;
+  if (generatedAt) {
+    const dt = new Date(generatedAt);
+    const dateStr = dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const timeStr = dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    label = `Index built on <strong>${dateStr} at ${timeStr}</strong> · Loaded instantly`;
+  }
+  document.getElementById('cache-time').innerHTML = label;
   document.getElementById('cache-bar').classList.add('show');
   document.getElementById('live-bar').style.display = 'none';
 }
